@@ -10,7 +10,6 @@ library(readxl)
 library(haven)
 ```
 
-
 ### Problem 1
 
 Below we import and clean data from `NYC_Transit_Subway_Entrance_And_Exit_Data.csv`. The process begins with data import, updates variable names, and selects the columns that will be used in later parts fo this problem. We update `entry` from `yes` / `no` to a logical variable. As part of data import, we specify that `Route` columns 8-11 should be character for consistency with 1-7.
@@ -28,7 +27,7 @@ trans_ent =
   mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
 ```
 
-As it stands, these data are not "tidy": route number should be a variable, as should route. That is, to obtain a tidy dataset we would need to convert `route` variables from wide to long format. This will be useful when focusing on specific routes, but may not be necessary when considering questions that focus on station-level variables. 
+As it stands, these data are not "tidy": route number should be a variable, as should route. That is, to obtain a tidy dataset we would need to convert `route` variables from wide to long format. This will be useful when focusing on specific routes, but may not be necessary when considering questions that focus on station-level variables.
 
 The following code chunk selects station name and line, and then uses `distinct()` to obtain all unique combinations. As a result, the number of rows in this dataset is the number of unique stations.
 
@@ -38,7 +37,7 @@ trans_ent %>%
   distinct
 ```
 
-The next code chunk is similar, but filters according to ADA compliance as an initial step. This produces a dataframe in which the number of rows is the number of ADA compliant stations. 
+The next code chunk is similar, but filters according to ADA compliance as an initial step. This produces a dataframe in which the number of rows is the number of ADA compliant stations.
 
 ```{r}
 trans_ent %>% 
@@ -78,19 +77,19 @@ trans_ent %>%
   distinct
 ```
 
-
 ### Problem 2
 
-```{r read and clean the Mr. Trash Wheel sheet for P2}
-mr_trash_df = 
-  read_excel("./Data/Trash Wheel Collection Data.xlsx", skip = 1) %>% 
+```{r First read and clean the Mr. Trash Wheel collection data sheet}
+mr_trash_wheel_df = 
+  read_excel("Trash Wheel Collection Data.xlsx", range = cell_cols("A:N")) %>% 
   janitor::clean_names() %>% 
-  select(dumpster:homes_powered) %>% 
   drop_na() %>% 
-  mutate(sports_balls = as.integer(round(sports_balls, 0)),
-         dumpster = as.double(dumpster),
-         name = 'mr_trash_wheel')
+  mutate(sports_balls = as.integer(sports_balls),
+         year = as.integer(year)) 
+mr_trash_wheel_df
 ```
+
+
 
 ```{r read and clean the Professor Trash Wheel for P2}
 pro_trash_df = 
@@ -102,17 +101,31 @@ pro_trash_df =
          name = "professor_trash_wheel")
 ```
 
-```{r combine these two dataset for P2}
-trash_df = bind_rows(mr_trash_df, pro_trash_df)
+```{r Then read and clean the Professor Trash Wheel collection data sheet}
+prof_trash_wheel_df = 
+  read_excel("Trash Wheel Collection Data.xlsx", sheet = "Professor Trash Wheel", range = cell_cols("A:M")) %>% 
+  janitor::clean_names() %>% 
+  drop_na() %>% 
+  mutate(year = as.integer(year)) 
+prof_trash_wheel_df
 ```
 
-* There are some descriptions regarding these data:
-  * There are these varibales: `r colnames(trash_df)`
-  * There are totally `r nrow(trash_df)` observations, and `r ncol(trash_df)` variables
-  * The total weight of trash collected by Professor Trash Wheel is `r sum(pro_trash_df$weight_tons)` tons.
-  * The total number of sport balls collected by Mr. Trash Wheel in 2020 is `r sum(mr_trash_df$sports_balls, mr_trash_df$year == 2020)` balls.
+```{r combine these two dataset}
+combined_trash_df = bind_rows(mr_trash_wheel_df, prof_trash_wheel_df)
+combined_trash_df
+```
+
+Descriptions about these data: 
+1. There are `r colnames(combined_trash_df)` variables. 
+2. There are totally `r nrow(combined_trash_df)` rows of observations, and `r ncol(combined_trash_df)` columns of observations.
+3. The total weight of trash collected by Professor Trash Wheel is `r sum(prof_trash_wheel_df$weight_tons)` tons. 
+4. The total number of sport balls collected by Mr. Trash Wheel in 2020 is `r sum(mr_trash_wheel_df$sports_balls, mr_trash_wheel_df$year == 2020)` balls. 
 
 
 ### Problem 3
 
-
+```{r import datasets of pols_month, unemployment and snp}
+pols_month_df = read_csv("fivethirtyeight_datasets/pols-month.csv")
+unemployment_df = read_csv("fivethirtyeight_datasets/unemployment.csv")
+snp_df = read_csv("fivethirtyeight_datasets/snp.csv")
+```
