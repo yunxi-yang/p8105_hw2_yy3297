@@ -17,7 +17,7 @@ Below we import and clean data from `NYC_Transit_Subway_Entrance_And_Exit_Data.c
 ```{r}
 trans_ent = 
   read_csv(
-    "data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    "NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
     col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
   janitor::clean_names() %>% 
   select(
@@ -90,17 +90,6 @@ mr_trash_wheel_df
 ```
 
 
-
-```{r read and clean the Professor Trash Wheel for P2}
-pro_trash_df = 
-  read_excel("./Data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = "Professor Trash Wheel", skip = 1) %>% 
-  janitor::clean_names() %>% 
-  drop_na() %>% 
-  mutate(sports_balls = as.integer(round(sports_balls, 0)),
-         year = as.character(year),
-         name = "professor_trash_wheel")
-```
-
 ```{r Then read and clean the Professor Trash Wheel collection data sheet}
 prof_trash_wheel_df = 
   read_excel("Trash Wheel Collection Data.xlsx", sheet = "Professor Trash Wheel", range = cell_cols("A:M")) %>% 
@@ -116,7 +105,7 @@ combined_trash_df
 ```
 
 Descriptions about these data: 
-1. There are `r colnames(combined_trash_df)` variables. 
+1. The combined data set contains the variables of `r colnames(combined_trash_df)`.
 2. There are totally `r nrow(combined_trash_df)` rows of observations, and `r ncol(combined_trash_df)` columns of observations.
 3. The total weight of trash collected by Professor Trash Wheel is `r sum(prof_trash_wheel_df$weight_tons)` tons. 
 4. The total number of sport balls collected by Mr. Trash Wheel in 2020 is `r sum(mr_trash_wheel_df$sports_balls, mr_trash_wheel_df$year == 2020)` balls. 
@@ -124,8 +113,56 @@ Descriptions about these data:
 
 ### Problem 3
 
-```{r import datasets of pols_month, unemployment and snp}
-pols_month_df = read_csv("fivethirtyeight_datasets/pols-month.csv")
-unemployment_df = read_csv("fivethirtyeight_datasets/unemployment.csv")
-snp_df = read_csv("fivethirtyeight_datasets/snp.csv")
+```{r First, read and clean the data of pols_month}
+pols_month_df = 
+  read_csv("fivethirtyeight_datasets/pols-month.csv") %>% 
+  janitor::clean_names() %>% 
+  separate(col = mon, into = c("year", "month", "day"), sep = '-', convert = TRUE) %>% 
+  mutate(month = month.abb[month],
+         president = ifelse(prez_gop == 1, "gop", "dem"),
+         year = as.integer(year)) %>% 
+  select(-prez_dem, -prez_gop, -day) %>% 
+  arrange(year)
+pols_month_df
 ```
+
+
+```{r Second, read and clean the data of snp}
+snp_df = 
+  read_csv("fivethirtyeight_datasets/snp.csv") %>% 
+  janitor::clean_names() %>% 
+  separate(col = date, into = c("month", "day", "year"), sep = '/', convert = TRUE) %>% 
+  arrange(year, month, day) %>%
+  mutate(month = month.abb[month],
+         year = ifelse(year > 15, year+1900, year+2000),
+         year = as.integer(year)) %>%
+  select(year, month, close) %>%
+  arrange(year)
+snp_df
+```
+
+```{r Third, read and clean the data of unemployment}
+unemployment_df = 
+  read_csv("fivethirtyeight_datasets/unemployment.csv") %>% 
+  pivot_longer(Jan : Dec, names_to = "month", values_to = "unemployment_rate") %>% 
+  janitor::clean_names() %>% 
+  drop_na() %>% 
+  mutate(year = as.integer(year)) %>%
+  arrange(year)
+unemployment_df
+```
+
+```{r Join the datasets by merging snp into pols_month, and merging unemployment into the result}
+snp_into_pols_df = left_join(pols_month_df, snp_df, by = c('year', 'month'))
+final_df = left_join(snp_into_pols_df, unemployment_df, by = c('year', 'month')) %>%
+  arrange(year)
+final_df
+```
+
+Descriptions about each data sets:
+1. The pols_month data set contains the variables of `r colnames(pols_month_df)`, and there are `r nrow(pols_month_df)` rows and `r ncol(pols_month_df)` columns of observations. The range of years for this data set is `r range(pols_month_df$year)` years.
+2. The snp data set contains the variables of `r colnames(snp_df)`, and there are `r nrow(snp_df)` rows and `r ncol(snp_df)` columns of observations. The range of years for this data set is `r range(snp_df$year)` years.
+3. The unemployment data set contains the variables of `r colnames(unemployment_df)`, and there are `r nrow(unemployment_df)` rows and `r ncol(unemployment_df)` columns of observations. The range of years for this data set is `r range(unemployment_df$year)` years.
+4. The final data set contains the variables of `r colnames(final_df)`, and it has `r nrow(final_df)` rows and `r ncol(final_df)` columns of observations. The range of years for this data set is `r range(final_df$year)` years.
+
+
